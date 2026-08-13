@@ -22,17 +22,22 @@ RUN groupadd -r scraper && useradd -r -g scraper -u 1001 -d /app scraper
 
 WORKDIR /app
 
+# Crear virtual environment como root
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copiar archivos con permisos correctos
 COPY --chown=scraper:scraper . .
 
-# Instalar dependencias de Python globalmente (no en --user)
-RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
+# Instalar dependencias en venv
+RUN /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Crear directorio para Chrome user data y dar permisos
 RUN mkdir -p /tmp/chrome-user-data && \
     chmod 777 /tmp/chrome-user-data && \
     chmod 755 /app && \
-    chown -R scraper:scraper /app
+    chown -R scraper:scraper /app /opt/venv
 
 # Cambiar a usuario no-root
 USER scraper
