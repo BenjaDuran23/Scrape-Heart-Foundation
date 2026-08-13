@@ -1,4 +1,10 @@
-selenium>=4.10.0
-webdriver-manager>=3.9.0
-beautifulsoup4>=4.11.0
-requests>=2.28.0
+# Versiones fijadas: build reproducible y auditable.
+# webdriver-manager se eliminó a propósito: no lo usa el código y descargaba
+# binarios desde internet en runtime (superficie de supply-chain innecesaria).
+selenium==4.47.0
+beautifulsoup4==4.15.0
+requests==2.34.2
+
+# Transitivas con historial de CVEs: piso explícito por seguridad.
+urllib3>=2.7.0
+certifi>=2026.7.22

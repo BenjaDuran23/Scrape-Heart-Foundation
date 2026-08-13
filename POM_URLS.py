@@ -3,6 +3,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+import os
+import tempfile
 import time
 
 BASE_URL = "https://www.heartfoundation.org.au"
@@ -10,12 +13,21 @@ BASE_URL = "https://www.heartfoundation.org.au"
 class RecipeScraper:
     def __init__(self):
         chrome_options = Options()
-        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--headless=new")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--user-data-dir=/tmp/chrome-user-data")
-        self.driver = webdriver.Chrome(options=chrome_options)
+        # Sandbox de Chrome: requiere privilegios que el contenedor no concede.
+        # El aislamiento lo da el contenedor + el usuario sin privilegios.
+        chrome_options.add_argument("--no-sandbox")
+        # Perfil efímero y propio de cada ejecución
+        self._profile_dir = tempfile.mkdtemp(prefix="chrome-profile-")
+        chrome_options.add_argument(f"--user-data-dir={self._profile_dir}")
+
+        # En el contenedor el driver está fijado en build time (ver Dockerfile).
+        # Fuera de él, Selenium Manager lo resuelve solo.
+        driver_path = os.environ.get("CHROMEDRIVER")
+        service = Service(executable_path=driver_path) if driver_path else Service()
+        self.driver = webdriver.Chrome(service=service, options=chrome_options)
 
     def navigate_to_recipes(self):
         """Navegate to main page"""
@@ -64,10 +76,11 @@ class RecipeScraper:
         self.navigate_to_recipes()
         all_urls = set()
 
-        while self.go_next_page():
+        while True:
             actual_page_urls = self.extract_recipe_urls()
             all_urls.update(actual_page_urls)
-
+            if not self.go_next_page():
+                break
         return all_urls
 
     def close(self):
