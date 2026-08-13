@@ -25,8 +25,13 @@ WORKDIR /app
 # Copiar archivos con permisos correctos
 COPY --chown=scraper:scraper . .
 
+# Dar permisos necesarios para Chrome sandboxing
+RUN chmod 755 /app && \
+    mkdir -p /app/.config && \
+    chown -R scraper:scraper /app
+
 # Instalar dependencias de Python
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Cambiar a usuario no-root
 USER scraper
